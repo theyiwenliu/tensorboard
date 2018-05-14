@@ -42,9 +42,7 @@ class GraphsPlugin(base_plugin.TBPlugin):
       context: A base_plugin.TBContext instance.
     """
     self._multiplexer = context.multiplexer
-    # TODO: read multiple whitelists from model runs
-    whitelist_file = context.logdir + '/whitelist.json'
-    self.whitelist = json.load(open(whitelist_file))
+    self.logdir = context.logdir
 
   def get_plugin_apps(self):
     return {
@@ -154,6 +152,14 @@ class GraphsPlugin(base_plugin.TBPlugin):
 
   @wrappers.Request.application
   def whitelist_route(self, request):
-    response = self.whitelist
-    return http_util.Respond(request, response, 'application/json')
+    run = request.args.get('run')
+    whitelist = []
+    whitelist_path = '%s/%s/whitelist.json' % (self.logdir, run)
+    try:
+      file_content = json.load(open(whitelist_path))
+      if 'whitelist' in file_content:
+        whitelist = file_content['whitelist']
+    except IOError as e:
+      pass
+    return http_util.Respond(request, whitelist, 'application/json')
 
